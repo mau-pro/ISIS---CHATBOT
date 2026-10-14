@@ -1,0 +1,154 @@
+/* ============================================================
+   styles/rediseno.css — Paginación, buscador, respuestas en tarjetas,
+   animaciones suaves y tema oscuro. Se carga después de app.css.
+   ============================================================ */
+
+:root { --panel-hover: #f1f3f7; }
+
+.panel__stat-card__icono--5 { background: #fef9c3; color: #ca8a04; }
+.panel__stat-card__icono--6 { background: #fce7f3; color: #db2777; }
+
+/* ---------- Paginación ---------- */
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--panel-border);
+  font-size: 13px;
+  color: var(--panel-ink-soft);
+}
+.paginacion__botones { display: flex; align-items: center; gap: 4px; }
+.paginacion__botones button {
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-card-bg);
+  color: var(--panel-ink);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s, border-color 0.15s;
+}
+.paginacion__botones button:hover:not(:disabled) {
+  background: var(--panel-hover);
+  border-color: var(--panel-accent-blue);
+  transform: translateY(-1px);
+}
+.paginacion__botones button:disabled { opacity: 0.4; cursor: not-allowed; }
+.paginacion__botones .paginacion__activa {
+  background: var(--panel-primary);
+  border-color: var(--panel-primary);
+  color: #fff;
+}
+.paginacion__botones .material-symbols-outlined { font-size: 20px; }
+.paginacion__puntos { padding: 0 4px; }
+
+/* ---------- Buscador ---------- */
+.panel__buscador {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 0 12px;
+  margin-bottom: 14px;
+  max-width: 420px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.panel__buscador:focus-within {
+  border-color: var(--panel-accent-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.panel__buscador .material-symbols-outlined { color: var(--panel-ink-soft); font-size: 20px; }
+.panel__buscador input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 11px 0;
+  font-size: 14px;
+  color: var(--panel-ink);
+  font-family: "Inter", sans-serif;
+}
+.panel__card--tabla { padding: 0; overflow: hidden; }
+
+/* ---------- Respuestas del asistente en tarjetas ---------- */
+.panel__msg-burbuja--respuesta { min-width: 220px; }
+.respuesta__texto { margin: 0 0 8px; line-height: 1.5; }
+.respuesta__lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.respuesta__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--panel-hover);
+  border-left: 3px solid var(--panel-accent-blue);
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+.respuesta__principal { font-weight: 600; color: var(--panel-ink); }
+.respuesta__etiqueta {
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--panel-ink-soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+}
+.respuesta__rapida {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--panel-success);
+}
+.respuesta__rapida .material-symbols-outlined { font-size: 15px; }
+
+/* ---------- Sugerencias del chat ---------- */
+.panel__sugerencias { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.panel__sugerencia {
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--panel-ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.panel__sugerencia:hover {
+  transform: translateY(-2px);
+  border-color: var(--panel-accent-blue);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  background: var(--panel-hover);
+}
+
+/* ---------- Animaciones suaves ---------- */
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.panel__msg,
+.panel__historial-item,
+.panel__stat-card,
+.panel__card,
+.docs-tabla tbody tr { animation: aparecer 0.3s ease both; }
+.panel__stat-card,
+.panel__historial-item { transition: transform 0.2s, box-shadow 0.2s; }
+.panel__stat-card:hover,
+.panel__historial-item:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(16, 26, 46, 0.1); }
+.panel__nav-item { transition: background 0.15s, color 0.15s, transform 0.15s; }
+.panel__nav-item:hover { transform: translateX(3px); }
+.panel__topbar-icono--tema:hover { color: var(--panel-accent-blue); }

@@ -1,0 +1,750 @@
+/* ============================================================
+   styles/app.css — Estilos del panel (sidebar + dashboards) y de
+   las páginas de login/registro, basados en las capturas de
+   referencia del usuario. Separado de index.css y home.css.
+   ============================================================ */
+
+:root {
+  --panel-sidebar-bg: #101a2e;
+  --panel-sidebar-active: #1c2942;
+  --panel-sidebar-text: #aab4c8;
+  --panel-sidebar-text-active: #ffffff;
+  --panel-sidebar-subtitle-gold: #d4af37;
+  --panel-sidebar-subtitle-gray: #8b95a8;
+
+  --panel-bg: #f5f6f8;
+  --panel-card-bg: #ffffff;
+  --panel-border: #e3e5ea;
+  --panel-ink: #1c2233;
+  --panel-ink-soft: #6b7280;
+  --panel-primary: #16213f;
+  --panel-primary-hover: #1f2d54;
+  --panel-accent-blue: #2563eb;
+  --panel-danger: #dc2626;
+  --panel-danger-soft: #fde8e8;
+  --panel-success: #16a34a;
+  --panel-success-soft: #e5f5ea;
+}
+
+/* ============================================================
+   Panel (sidebar + dashboards de admin/estudiante)
+   ============================================================ */
+
+.panel {
+  display: flex;
+  min-height: 100vh;
+  background: var(--panel-bg);
+  font-family: "Inter", sans-serif;
+  color: var(--panel-ink);
+}
+
+/* ---------- Sidebar ---------- */
+
+.panel__sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--panel-sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+}
+
+.panel__sidebar-marca {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 8px 20px;
+}
+
+.panel__sidebar-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--panel-primary);
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.panel__sidebar-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.25;
+}
+
+.panel__sidebar-subtitulo {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.panel__sidebar-subtitulo--admin {
+  color: var(--panel-sidebar-subtitle-gold);
+}
+
+.panel__sidebar-subtitulo--estudiante {
+  color: var(--panel-sidebar-subtitle-gray);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.panel__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.panel__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--panel-sidebar-text);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: "Inter", sans-serif;
+  text-align: left;
+  width: 100%;
+}
+
+.panel__nav-item .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.panel__nav-item:hover {
+  background: var(--panel-sidebar-active);
+  color: #fff;
+}
+
+.panel__nav-item--activo {
+  background: var(--panel-sidebar-active);
+  color: #fff;
+  font-weight: 500;
+}
+
+.panel__sidebar-pie {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 10px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ---------- Área principal ---------- */
+
+.panel__main {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.panel__topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 32px 0;
+}
+
+.panel__topbar-titulo {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--panel-ink);
+  margin: 0 0 4px;
+}
+
+.panel__topbar-subtitulo {
+  font-size: 14px;
+  color: var(--panel-accent-blue);
+  margin: 0;
+}
+
+.panel__topbar-iconos {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.panel__topbar-icono {
+  color: var(--panel-ink-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+}
+
+.panel__contenido {
+  padding: 20px 32px 40px;
+}
+
+/* ---------- Tarjetas de estadísticas ---------- */
+
+.panel__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.panel__stat-card {
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 18px;
+  position: relative;
+}
+
+.panel__stat-card__valor {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--panel-ink);
+}
+
+.panel__stat-card__etiqueta {
+  font-size: 13px;
+  color: var(--panel-ink-soft);
+}
+
+.panel__stat-card__icono {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.panel__stat-card__icono--0 { background: #dbeafe; color: #2563eb; }
+.panel__stat-card__icono--1 { background: #cffafe; color: #0891b2; }
+.panel__stat-card__icono--2 { background: #e0e7ff; color: #4f46e5; }
+.panel__stat-card__icono--3 { background: #ffedd5; color: #ea580c; }
+.panel__stat-card__icono--4 { background: #ede9fe; color: #7c3aed; }
+
+.panel__empty-card {
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--panel-ink-soft);
+}
+
+.panel__empty-card .material-symbols-outlined {
+  font-size: 36px;
+  color: var(--panel-ink-soft);
+  margin-bottom: 10px;
+}
+
+.panel__empty-card__titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--panel-ink);
+  margin: 4px 0 6px;
+}
+
+.panel__empty-card__texto {
+  font-size: 13px;
+  max-width: 340px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ---------- Documentos: selector + dropzone + tabla ---------- */
+
+.panel__card {
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.panel__selector label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--panel-ink);
+  margin-bottom: 8px;
+}
+
+.panel__selector select {
+  padding: 8px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  background: var(--panel-card-bg);
+  color: var(--panel-ink);
+}
+
+.panel__dropzone {
+  border: 2px dashed var(--panel-border);
+  border-radius: 10px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  margin-top: 16px;
+  color: var(--panel-ink-soft);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.panel__dropzone--activa {
+  border-color: var(--panel-primary);
+  background: #f8f9fb;
+}
+
+.panel__dropzone .material-symbols-outlined {
+  font-size: 32px;
+  color: var(--panel-ink-soft);
+  margin-bottom: 8px;
+}
+
+.panel__dropzone-titulo {
+  font-weight: 700;
+  color: var(--panel-ink);
+  margin: 4px 0;
+}
+
+.panel__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.panel__tabla th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--panel-ink-soft);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.panel__tabla td {
+  padding: 12px;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--panel-ink);
+}
+
+.panel__tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.panel__tabla-archivo {
+  color: var(--panel-accent-blue);
+  font-weight: 500;
+}
+
+.panel__badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #fdead0;
+  color: #92400e;
+}
+
+.panel__badge--rol-admin {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.panel__badge--rol-estudiante {
+  background: #eef0f3;
+  color: #475467;
+}
+
+.panel__verificado {
+  color: var(--panel-success);
+  font-weight: 500;
+}
+
+.panel__accion-eliminar {
+  background: none;
+  border: none;
+  color: var(--panel-danger);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+}
+
+.panel__accion-eliminar:hover {
+  text-decoration: underline;
+}
+
+.panel__acciones-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel__boton-rol {
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--panel-ink);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+}
+
+.panel__boton-rol:hover {
+  border-color: var(--panel-primary);
+  color: var(--panel-primary);
+}
+
+.panel__boton-icono-eliminar {
+  background: var(--panel-danger-soft);
+  border: none;
+  color: var(--panel-danger);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.panel__boton-icono-eliminar .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.panel__boton-icono-eliminar:hover {
+  background: var(--panel-danger);
+  color: #fff;
+}
+
+/* ---------- Chat del estudiante ---------- */
+
+.panel__chat {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 400px;
+  margin-bottom: 16px;
+}
+
+.panel__msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 75%;
+}
+
+.panel__msg--asistente {
+  align-self: flex-start;
+}
+
+.panel__msg--usuario {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.panel__msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.panel__msg-avatar--asistente {
+  background: var(--panel-primary);
+  color: #fff;
+}
+
+.panel__msg-avatar--usuario {
+  background: #d8dde6;
+  color: var(--panel-ink);
+}
+
+.panel__msg-burbuja {
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.panel__msg--asistente .panel__msg-burbuja {
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--panel-ink);
+  border-bottom-left-radius: 4px;
+}
+
+.panel__msg--usuario .panel__msg-burbuja {
+  background: var(--panel-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.panel__msg-editar {
+  opacity: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--panel-ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.panel__msg-editar .material-symbols-outlined {
+  font-size: 22px;
+}
+
+.panel__msg--usuario:hover .panel__msg-editar {
+  opacity: 1;
+}
+
+.panel__msg-editar:hover {
+  color: var(--panel-success);
+  background: var(--panel-success-soft);
+}
+
+.panel__msg-burbuja--cargando {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 16px;
+}
+
+.panel__msg-punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--panel-ink-soft);
+  animation: panel-msg-punto-pulso 1.2s infinite ease-in-out;
+}
+
+.panel__msg-punto:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.panel__msg-punto:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes panel-msg-punto-pulso {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.panel__chat-editando {
+  font-size: 12px;
+  color: var(--panel-ink-soft);
+  margin: -6px 0 8px;
+}
+
+.panel__chat-editando button {
+  background: none;
+  border: none;
+  color: var(--panel-primary);
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 4px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.panel__chat-vacio {
+  margin: auto;
+  color: var(--panel-ink-soft);
+  font-size: 14px;
+  text-align: center;
+}
+
+.panel__chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 6px 6px 6px 16px;
+}
+
+.panel__chat-input-row .material-symbols-outlined {
+  color: var(--panel-ink-soft);
+  font-size: 20px;
+}
+
+.panel__chat-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: "Inter", sans-serif;
+  padding: 10px 0;
+  background: transparent;
+  color: var(--panel-ink);
+}
+
+.panel__chat-enviar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+}
+
+.panel__chat-enviar:hover {
+  background: var(--panel-primary-hover);
+}
+
+.panel__chat-enviar:disabled {
+  background: var(--panel-border);
+  color: var(--panel-ink-soft);
+  cursor: not-allowed;
+}
+
+.panel__chat-disclaimer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--panel-ink-soft);
+  margin-top: 10px;
+}
+
+.panel__memo {
+  background: #eef2ff;
+  border-left: 3px solid var(--panel-accent-blue);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  color: var(--panel-ink-soft);
+  margin-bottom: 16px;
+}
+
+.panel__memo a {
+  color: var(--panel-accent-blue);
+  font-weight: 600;
+}
+
+.panel__aviso-error {
+  background: var(--panel-danger-soft);
+  color: var(--panel-danger);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+/* ---------- Historial (estudiante) ---------- */
+
+.panel__boton-peligro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-danger);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 16px;
+  font-family: "Inter", sans-serif;
+}
+
+.panel__boton-peligro .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.panel__boton-peligro:hover {
+  background: #b91c1c;
+}
+
+.panel__boton-peligro:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.panel__historial {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel__historial-item {
+  background: var(--panel-card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.panel__historial-fecha {
+  font-size: 11.5px;
+  color: var(--panel-ink-soft);
+  margin-bottom: 6px;
+}
+
+.panel__historial-pregunta {
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--panel-ink);
+}
+
+.panel__historial-respuesta {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--panel-ink-soft);
+  white-space: pre-line;
+  border-left: 2px solid var(--panel-border);
+  padding-left: 10px;
+}
+
+.panel__estado-vacio {
+  text-align: center;
+  color: var(--panel-ink-soft);
+  font-size: 14px;
+  padding: 32px 0;
+}

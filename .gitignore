@@ -1,0 +1,29 @@
+# Secretos: NUNCA se suben (claves de Groq, JWT, SMTP, contraseña del admin)
+.env
+*.env
+!.env.example
+
+# Entornos y dependencias (se reinstalan con pip / npm)
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.pyc
+
+# Build del frontend
+frontend/dist/
+
+# Datos locales: base SQLite, vectores de ChromaDB, archivos subidos por el admin
+backend/app.db
+backend/chroma_data/
+backend/uploads/
+
+# Cuentas de prueba (contienen contraseñas) y archivos de la prueba de carga
+backend/cuentas_estudiantes_prueba.csv
+backend/carga_prueba/
+
+# Sistema / editor
+.claude/
+.DS_Store
+Thumbs.db
+*.log
