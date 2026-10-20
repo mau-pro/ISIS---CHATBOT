@@ -2,7 +2,8 @@
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    OMP_THREAD_LIMIT=1
 
 # tesseract-ocr-spa = español para leer mejor tildes y palabras de los carteles
 RUN apt-get update \

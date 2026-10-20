@@ -68,10 +68,14 @@ El proyecto corre con tres contenedores (`docker-compose.yml`): **db** (PostgreS
 
 ### Pasar los datos que ya tenías (opcional)
 ```bash
-docker compose cp backend/app.db backend:/app/app.db                  # cuentas, historial, registro de documentos
-docker compose exec backend python migrar_a_postgres.py "$DATABASE_URL"
-docker compose cp backend/uploads/. backend:/app/uploads/             # archivos originales
-docker compose cp backend/chroma_data/. backend:/app/chroma_data/     # índice de búsqueda
+# 1) En tu PC (modo desarrollo): meter los archivos de uploads/ dentro de app.db
+cd backend && python migrar_archivos_a_db.py uploads && cd ..
+# 2) Pasar todo a PostgreSQL: cuentas, historial, documentos y sus archivos originales
+docker compose cp backend/app.db backend:/app/app.db
+docker compose exec backend sh -c 'python migrar_a_postgres.py "$DATABASE_URL"'
+docker compose exec backend rm -f /app/app.db
+# 3) Índice de búsqueda (ChromaDB)
+docker compose cp backend/chroma_data/. backend:/app/chroma_data/
 docker compose restart backend
 ```
 Si el índice copiado da errores (distinta versión de ChromaDB), borrá el volumen `chroma` y volvé a subir
@@ -81,6 +85,6 @@ los documentos, o releé las imágenes con `POST /admin/documents/reindexar-imag
 - Ver registros: `docker compose logs -f backend`
 - Actualizar: `git pull && docker compose up -d --build` (los datos están en volúmenes y no se pierden).
 - **Respaldo** (hacerlo a diario y guardarlo FUERA del servidor):
-  `docker compose exec db pg_dump -U isis asistente > respaldo.sql`, más una copia de los volúmenes `uploads` y `chroma`.
+  `docker compose exec db pg_dump -U isis asistente > respaldo.sql`, más una copia del volumen `chroma` (el índice de búsqueda, que se puede reconstruir). Cuentas, historial **y archivos originales** viven dentro de PostgreSQL, así que `pg_dump` los incluye.
 - Un solo proceso del backend a propósito: el límite de consultas por estudiante vive en memoria.
 - La base de datos no se expone a internet; solo la ve el backend por la red interna de Docker.

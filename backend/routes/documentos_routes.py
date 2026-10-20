@@ -14,19 +14,18 @@ como tarjetas en el inicio:
 - GET /documentos/{id}/descargar   -> descarga el archivo original (no el texto extraído)
 """
 
-import os
+import mimetypes
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models.document import Document, DocumentCategory
+from models.document import Document, DocumentCategory, DocumentFile
 from schemas import DocumentoPublicoResponse
 
 router = APIRouter(prefix="/documentos", tags=["documentos públicos"])
-
-UPLOADS_DIR = "uploads"
 
 SECCIONES_CATEGORIAS: dict[str, list[DocumentCategory]] = {
     "comunicados": [DocumentCategory.aviso],
@@ -61,8 +60,14 @@ def descargar_documento(document_id: int, db: Session = Depends(get_db)):
     if not documento or not documento.stored_filename:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 
-    ruta = os.path.join(UPLOADS_DIR, documento.stored_filename)
-    if not os.path.exists(ruta):
+    archivo = db.get(DocumentFile, document_id)
+    if archivo is None:
         raise HTTPException(status_code=404, detail="El archivo ya no está disponible")
 
-    return FileResponse(ruta, filename=documento.filename)
+    tipo = mimetypes.guess_type(documento.filename)[0] or "application/octet-stream"
+    nombre = quote(documento.filename)  # el nombre puede tener tildes o espacios (RFC 5987)
+    return Response(
+        content=bytes(archivo.contenido),
+        media_type=tipo,
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{nombre}"},
+    )

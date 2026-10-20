@@ -2,8 +2,8 @@
 migrar_a_postgres.py
 --------------------
 Copia TODOS los datos de app.db (SQLite) a PostgreSQL (users, documents,
-chat_logs), conservando los ids. Los vectores de ChromaDB y la carpeta
-uploads/ no se tocan: no dependen de la base relacional.
+document_files —los archivos originales—, chat_logs), conservando los ids. Los
+vectores de ChromaDB no se tocan: no dependen de la base relacional.
 
 Pasos:
   1. Instalar PostgreSQL y crear la base:   CREATE DATABASE asistente;
@@ -19,7 +19,7 @@ from sqlalchemy.orm import sessionmaker
 from database import Base
 import models.user, models.document, models.chat_log  # noqa: F401  (registra las tablas)
 
-TABLAS = ["users", "documents", "chat_logs"]  # orden por claves foráneas
+TABLAS = ["users", "documents", "document_files", "chat_logs"]  # orden por claves foráneas
 
 
 def main(url_destino: str):
@@ -31,14 +31,17 @@ def main(url_destino: str):
     Base.metadata.create_all(bind=destino)
 
     with origen.connect() as src, destino.begin() as dst:
-        dst.execute(text("TRUNCATE chat_logs, documents, users RESTART IDENTITY CASCADE"))
+        dst.execute(text("TRUNCATE chat_logs, document_files, documents, users RESTART IDENTITY CASCADE"))
         for nombre in TABLAS:
             tabla = Base.metadata.tables[nombre]
-            filas = [dict(r._mapping) for r in src.execute(tabla.select())]
+            try:
+                filas = [dict(r._mapping) for r in src.execute(tabla.select())]
+            except Exception:  # la tabla puede no existir todavía en la SQLite de origen
+                filas = []
             if filas:
                 dst.execute(tabla.insert(), filas)
             # que el próximo id autogenerado continúe después del mayor copiado
-            if filas and "id" in tabla.c:
+            if filas and "id" in tabla.c and nombre != "document_files":
                 dst.execute(text(
                     f"SELECT setval(pg_get_serial_sequence('{nombre}','id'), (SELECT MAX(id) FROM {nombre}))"
                 ))

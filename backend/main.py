@@ -45,6 +45,10 @@ def _migrar_columnas_faltantes() -> None:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE chat_logs ADD COLUMN tokens INTEGER NOT NULL DEFAULT 0"))
 
+    if "tamano_bytes" not in {c["name"] for c in inspector.get_columns("documents")}:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE documents ADD COLUMN tamano_bytes INTEGER"))
+
     if "modelo" not in columnas_chat_logs:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE chat_logs ADD COLUMN modelo VARCHAR"))

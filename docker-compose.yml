@@ -1,6 +1,6 @@
 # I-SIS completo con un solo comando:   docker compose up -d --build
 #
-#   db        PostgreSQL 16 (cuentas, historial y registro de documentos)
+#   db        PostgreSQL 16 (cuentas, historial, documentos y sus archivos originales)
 #   backend   FastAPI + OCR (Tesseract) + búsqueda (ChromaDB)
 #   frontend  nginx: sirve la web y reenvía /api al backend (puerto 80)
 #
@@ -34,12 +34,13 @@ services:
       FRONTEND_URL: ${PUBLIC_URL:-http://localhost}
       BACKEND_URL: ${PUBLIC_URL:-http://localhost}/api
       CORS_ORIGINS: ${PUBLIC_URL:-http://localhost}
+      # Tesseract con varios hilos se pisa dentro del contenedor (42 s -> 12 s por imagen con 1 hilo)
+      OMP_THREAD_LIMIT: "1"
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - uploads:/app/uploads            # archivos originales subidos por el admin
-      - chroma:/app/chroma_data         # índice de búsqueda (se puede reconstruir desde uploads)
+      - chroma:/app/chroma_data         # índice de búsqueda (los archivos originales están en PostgreSQL)
       - modelo_embeddings:/root/.cache/chroma   # modelo de búsqueda (se descarga una sola vez)
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:8000/"]
@@ -60,7 +61,6 @@ services:
       - "80:80"
 
 volumes:
-  pgdata:
-  uploads:
+  pgdata:                          # PostgreSQL: cuentas, historial y archivos originales
   chroma:
   modelo_embeddings:

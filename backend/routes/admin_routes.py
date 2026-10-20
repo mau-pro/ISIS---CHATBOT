@@ -22,7 +22,7 @@ from pytesseract import TesseractNotFoundError
 
 from database import get_db
 from models.user import User, UserRole
-from models.document import Document, DocumentCategory
+from models.document import Document, DocumentCategory, DocumentFile
 from models.chat_log import ChatLog
 from schemas import (
     DocumentResponse,
@@ -48,7 +48,6 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 EXTENSIONES_PERMITIDAS = {"pdf", "docx", "xlsx", "xlsm"} | EXTENSIONES_IMAGEN
 TAMANO_MAXIMO_MB = 15
-UPLOADS_DIR = "uploads"
 
 
 @router.post("/documents", response_model=DocumentResponse)
@@ -114,16 +113,12 @@ async def subir_documento(
     db.commit()
     db.refresh(nuevo_doc)
 
-    # 2.5. Guardar una copia del archivo original en disco (uploads/), para
-    # que los estudiantes puedan descargarlo tal cual desde las secciones
-    # públicas del inicio. El nombre en disco usa el id (no el filename que
-    # mandó el usuario) para no pisar archivos ni depender de caracteres
-    # raros en el nombre original.
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
-    stored_filename = f"{nuevo_doc.id}.{extension}"
-    with open(os.path.join(UPLOADS_DIR, stored_filename), "wb") as destino:
-        destino.write(file_bytes)
-    nuevo_doc.stored_filename = stored_filename
+    # 2.5. Guardar el archivo ORIGINAL dentro de la base (tabla document_files), para
+    # que los estudiantes puedan descargarlo tal cual desde las secciones públicas
+    # del inicio. stored_filename queda como marca de "tiene archivo guardado".
+    db.add(DocumentFile(document_id=nuevo_doc.id, contenido=file_bytes))
+    nuevo_doc.stored_filename = f"{nuevo_doc.id}.{extension}"
+    nuevo_doc.tamano_bytes = len(file_bytes)
 
     # 3. Trocear (si no se hizo ya arriba) e indexar en ChromaDB
     if chunks is None:
@@ -149,7 +144,7 @@ def reindexar_imagenes(
 ):
     """
     Vuelve a leer con OCR las imágenes ya subidas (usando la copia original
-    guardada en uploads/) y reemplaza su texto indexado. Sirve cuando se
+    guardada en la base) y reemplaza su texto indexado. Sirve cuando se
     mejora el OCR: las imágenes viejas conservan la lectura anterior hasta
     que se reindexan. `ids` (opcional) limita a esos documentos.
     """
@@ -161,12 +156,11 @@ def reindexar_imagenes(
 
     resultado = []
     for doc in consulta.order_by(Document.id).all():
-        ruta = os.path.join(UPLOADS_DIR, doc.stored_filename)
-        if not os.path.exists(ruta):
+        archivo = db.get(DocumentFile, doc.id)
+        if archivo is None:
             resultado.append({"id": doc.id, "filename": doc.filename, "estado": "sin archivo original"})
             continue
-        with open(ruta, "rb") as f:
-            texto = extract_text(doc.filename, f.read())
+        texto = extract_text(doc.filename, bytes(archivo.contenido))
         if not texto.strip():
             resultado.append({"id": doc.id, "filename": doc.filename, "estado": "el OCR no encontró texto (se conserva el anterior)"})
             continue
@@ -218,10 +212,7 @@ def eliminar_documento(
 
     textos, metas = obtener_chunks_de_documento(document_id)
     delete_document_chunks(document_id)
-    if documento.stored_filename:
-        ruta = os.path.join(UPLOADS_DIR, documento.stored_filename)
-        if os.path.exists(ruta):
-            os.remove(ruta)
+    db.query(DocumentFile).filter(DocumentFile.document_id == document_id).delete()
     db.delete(documento)
     db.commit()
     invalidar_por_documento(textos, metas)
