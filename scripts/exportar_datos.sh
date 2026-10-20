@@ -32,7 +32,7 @@ NUEVA=$(head -c 96 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 64)
 grep -v -E '^(JWT_SECRET_KEY|DATABASE_URL)=' backend/.env > "$OUT/backend.env" || true
 printf 'JWT_SECRET_KEY=%s\n' "$NUEVA" >> "$OUT/backend.env"
 
-cp scripts/instalar_servidor.sh "$OUT/"
+git show HEAD:scripts/instalar_servidor.sh > "$OUT/instalar_servidor.sh"  # tal como está en el commit (saltos de línea de Linux)
 echo "5/5 Empaquetando"
 tar czf despliegue/paquete-servidor.tar.gz -C despliegue paquete
 echo "Listo: despliegue/paquete-servidor.tar.gz ($(du -h despliegue/paquete-servidor.tar.gz | cut -f1))"
