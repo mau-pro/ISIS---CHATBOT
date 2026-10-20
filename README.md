@@ -51,3 +51,36 @@ npm run dev                  # http://localhost:5173
 - Agregar verificación de correo institucional en el registro.
 - Migrar de SQLite a PostgreSQL si el proyecto se despliega en producción.
 - Mejorar el diseño del frontend (por ahora es funcional, sin estilos avanzados).
+
+## Despliegue con Docker
+
+El proyecto corre con tres contenedores (`docker-compose.yml`): **db** (PostgreSQL 16), **backend**
+(FastAPI + Tesseract en español + ChromaDB) y **frontend** (nginx, puerto 80, que reenvía `/api` al backend).
+
+### Primera vez
+1. Instalar Docker (Docker Desktop en Windows, o `docker` + `docker compose` en Linux).
+2. `cp .env.docker.example .env` y completar `POSTGRES_PASSWORD` y `PUBLIC_URL`.
+3. Crear `backend/.env` (ver `backend/.env.example`): `GROQ_API_KEY`, `JWT_SECRET_KEY` (larga y aleatoria),
+   `ADMIN_EMAIL`, `ADMIN_PASSWORD`, SMTP. No hace falta `DATABASE_URL`: el compose la define.
+4. `docker compose up -d --build`
+5. Crear la cuenta de administrador: `docker compose exec backend python seed_admin.py`
+6. Abrir `http://localhost` (o el dominio configurado en `PUBLIC_URL`).
+
+### Pasar los datos que ya tenías (opcional)
+```bash
+docker compose cp backend/app.db backend:/app/app.db                  # cuentas, historial, registro de documentos
+docker compose exec backend python migrar_a_postgres.py "$DATABASE_URL"
+docker compose cp backend/uploads/. backend:/app/uploads/             # archivos originales
+docker compose cp backend/chroma_data/. backend:/app/chroma_data/     # índice de búsqueda
+docker compose restart backend
+```
+Si el índice copiado da errores (distinta versión de ChromaDB), borrá el volumen `chroma` y volvé a subir
+los documentos, o releé las imágenes con `POST /admin/documents/reindexar-imagenes`.
+
+### Operación
+- Ver registros: `docker compose logs -f backend`
+- Actualizar: `git pull && docker compose up -d --build` (los datos están en volúmenes y no se pierden).
+- **Respaldo** (hacerlo a diario y guardarlo FUERA del servidor):
+  `docker compose exec db pg_dump -U isis asistente > respaldo.sql`, más una copia de los volúmenes `uploads` y `chroma`.
+- Un solo proceso del backend a propósito: el límite de consultas por estudiante vive en memoria.
+- La base de datos no se expone a internet; solo la ve el backend por la red interna de Docker.

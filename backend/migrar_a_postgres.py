@@ -23,6 +23,9 @@ TABLAS = ["users", "documents", "chat_logs"]  # orden por claves foráneas
 
 
 def main(url_destino: str):
+    for prefijo in ("postgresql://", "postgres://"):  # igual que database.py
+        if url_destino.startswith(prefijo):
+            url_destino = "postgresql+psycopg2://" + url_destino[len(prefijo):]
     origen = create_engine("sqlite:///./app.db")
     destino = create_engine(url_destino)
     Base.metadata.create_all(bind=destino)

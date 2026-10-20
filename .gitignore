@@ -2,6 +2,7 @@
 .env
 *.env
 !.env.example
+!.env.docker.example
 
 # Entornos y dependencias (se reinstalan con pip / npm)
 .venv/

@@ -20,6 +20,12 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 load_dotenv()
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
+# Supabase, Neon y Heroku entregan la URL como "postgresql://..." o "postgres://...",
+# pero SQLAlchemy necesita indicar el driver: se acepta tal cual la dan.
+for _prefijo in ("postgresql://", "postgres://"):
+    if SQLALCHEMY_DATABASE_URL.startswith(_prefijo):
+        SQLALCHEMY_DATABASE_URL = "postgresql+psycopg2://" + SQLALCHEMY_DATABASE_URL[len(_prefijo):]
+
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,

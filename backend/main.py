@@ -9,6 +9,8 @@ Punto de entrada de la aplicación. Se encarga de:
 Ejecutar con: uvicorn main:app --reload
 """
 
+import os
+
 from sqlalchemy import inspect, text
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -73,17 +75,28 @@ def _migrar_columnas_faltantes() -> None:
     # La categoría "convocatoria" se fusionó con "aviso" (quedan 4 categorías:
     # horario, docentes, aviso, otro). Si no se convierten las filas viejas,
     # leerlas fallaría porque ya no existe ese valor en el Enum.
-    with engine.begin() as conn:
-        conn.execute(text("UPDATE documents SET category = 'aviso' WHERE category = 'convocatoria'"))
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE documents SET category = 'aviso' WHERE category = 'convocatoria'"))
+    except Exception:
+        # En una base nueva (PostgreSQL) el tipo enum ya no tiene "convocatoria": no hay nada que convertir
+        pass
 
 
 _migrar_columnas_faltantes()
+
+# Orígenes del frontend autorizados a llamar a la API. En desarrollo es Vite (5173); en Docker
+# el frontend y la API comparten dominio (nginx), pero se puede ampliar con CORS_ORIGINS
+# (lista separada por comas, ej. "https://isis.midominio.edu.bo").
+_ORIGENES_PERMITIDOS = ["http://localhost:5173"] + [
+    o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()
+]
 
 app = FastAPI(title="Asistente Virtual Universitario")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # frontend en desarrollo (Vite)
+    allow_origins=_ORIGENES_PERMITIDOS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

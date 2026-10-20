@@ -1,0 +1,15 @@
+# Secretos y datos locales: no entran a la imagen (las claves se pasan al arrancar)
+.env
+*.env
+app.db
+chroma_data/
+uploads/
+cuentas_estudiantes_prueba.csv
+carga_prueba/
+
+# Entornos y basura
+venv/
+.venv/
+node_modules/
+__pycache__/
+*.pyc

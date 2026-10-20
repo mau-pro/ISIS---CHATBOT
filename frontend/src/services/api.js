@@ -9,7 +9,9 @@
 import axios from "axios";
 import { leerSesion, borrarSesionDelAlmacen } from "../utils/sesion.js";
 
-export const BASE_URL = "http://localhost:8000";
+// En desarrollo la API está en el puerto 8000. En Docker se compila con VITE_API_URL=/api y nginx
+// reenvía /api al backend (mismo dominio: sin problemas de CORS).
+export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const api = axios.create({
   baseURL: BASE_URL,

@@ -24,7 +24,9 @@ npm run build
 npm run preview
 ```
 
-El backend espera el frontend en `http://localhost:5173` (hardcodeado en CORS, [backend/main.py](backend/main.py)). Variables de entorno en `backend/.env` (ver `.env.example`): `JWT_SECRET_KEY`, `GROQ_API_KEY`, `ADMIN_EMAIL`/`ADMIN_PASSWORD`, `RATE_LIMIT_ESTUDIANTE`, SMTP para verificación de correo, `PRESUPUESTO_TOKENS_CONTEXTO`.
+**Docker**: `docker compose up -d --build` levanta db (PostgreSQL), backend y frontend (nginx en el puerto 80, `/api` -> backend); ver la sección "Despliegue con Docker" del README. Datos en volúmenes (`pgdata`, `uploads`, `chroma`). El frontend usa `VITE_API_URL` (`/api` en Docker, `http://localhost:8000` en desarrollo) y el backend acepta orígenes extra con `CORS_ORIGINS`.
+
+En desarrollo, el backend espera el frontend en `http://localhost:5173` (CORS en [backend/main.py](backend/main.py)). Variables de entorno en `backend/.env` (ver `.env.example`): `JWT_SECRET_KEY`, `GROQ_API_KEY`, `ADMIN_EMAIL`/`ADMIN_PASSWORD`, `RATE_LIMIT_ESTUDIANTE`, SMTP para verificación de correo, `PRESUPUESTO_TOKENS_CONTEXTO`.
 
 ## Arquitectura
 
