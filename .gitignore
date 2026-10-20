@@ -28,3 +28,6 @@ backend/carga_prueba/
 .DS_Store
 Thumbs.db
 *.log
+
+# Paquete para el servidor (contiene la base de datos y las claves)
+despliegue/
