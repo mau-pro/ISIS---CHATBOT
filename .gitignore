@@ -21,6 +21,8 @@ backend/uploads/
 
 # Cuentas de prueba (contienen contraseñas) y archivos de la prueba de carga
 backend/cuentas_estudiantes_prueba.csv
+backend/cuentas_beta.csv
+backend/cuentas_beta.txt
 backend/carga_prueba/
 
 # Sistema / editor
