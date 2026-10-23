@@ -86,6 +86,8 @@ export const eliminarDocumento = (id) => api.delete(`/admin/documents/${id}`);
 
 // ---------- Admin: estadísticas ----------
 export const obtenerEstadisticas = () => api.get("/admin/stats");
+export const listarModelosIA = () => api.get("/admin/modelos-ia");
+export const configurarModelosIA = (activos, principal) => api.put("/admin/modelos-ia", { activos, principal });
 
 // ---------- Admin: usuarios y roles ----------
 export const listarUsuarios = (page = 1, pageSize = 10, q = "", rol = "") =>

@@ -17,9 +17,9 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from database import Base
-import models.user, models.document, models.chat_log  # noqa: F401  (registra las tablas)
+import models.user, models.document, models.chat_log, models.ajuste  # noqa: F401  (registra las tablas)
 
-TABLAS = ["users", "documents", "document_files", "chat_logs"]  # orden por claves foráneas
+TABLAS = ["users", "documents", "document_files", "chat_logs", "ajustes"]  # orden por claves foráneas
 
 
 def main(url_destino: str):

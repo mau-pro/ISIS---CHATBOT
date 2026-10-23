@@ -6,6 +6,8 @@ import {
   subirDocumento,
   eliminarDocumento,
   obtenerEstadisticas,
+  listarModelosIA,
+  configurarModelosIA,
   listarUsuarios,
   cambiarRolUsuario,
   eliminarUsuario,
@@ -311,35 +313,131 @@ function SeccionEstadisticas() {
         ))}
       </div>
 
-      <div className="tokens-dia">
-        <div className="tokens-dia__texto">
-          <strong>Tokens de IA gastados hoy: {stats.tokens_hoy.toLocaleString("es-BO")}</strong>
-          <span>
-            Cada modelo gratuito tiene su propio límite diario de {stats.limite_tokens_dia.toLocaleString("es-BO")} tokens:
-            cuando uno se agota, el asistente sigue con el siguiente.
-          </span>
-        </div>
-        {Object.entries(stats.tokens_por_modelo).map(([modelo, tokens]) => {
-          const uso = tokens / stats.limite_tokens_dia;
-          return (
-            <div key={modelo} className="tokens-dia__fila">
-              <span className="tokens-dia__modelo" title={modelo}>{modelo.split("/").pop()}</span>
-              <div className="tokens-dia__barra">
+      <ModelosIA stats={stats} />
+
+      <PreguntasAprendidas onCambio={cargarStats} />
+    </>
+  );
+}
+
+/* ---------- Modelos de IA: encender/apagar y elegir el principal ---------- */
+
+const NOMBRE_PROVEEDOR = { groq: "Groq", gemini: "Google Gemini" };
+
+function estadoModelo(m) {
+  if (!m.con_clave) return { texto: "Sin clave", clase: "apagado" };
+  if (!m.activo) return { texto: "Apagado", clase: "apagado" };
+  if (m.pausa_diaria) return { texto: "Cupo del día agotado", clase: "pausa" };
+  if (m.pausa_segundos > 0) return { texto: `En pausa ${m.pausa_segundos} s`, clase: "pausa" };
+  return { texto: "Disponible", clase: "ok" };
+}
+
+function ModelosIA({ stats }) {
+  const [modelos, setModelos] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    listarModelosIA().then(({ data }) => setModelos(data));
+  }, []);
+
+  if (!modelos) return <p className="panel__estado-vacio">Cargando…</p>;
+
+  const activos = modelos.filter((m) => m.activo).map((m) => m.id);
+  const principal = modelos.find((m) => m.principal)?.id;
+
+  const guardar = async (nuevosActivos, nuevoPrincipal) => {
+    setGuardando(true);
+    setError("");
+    try {
+      const { data } = await configurarModelosIA(nuevosActivos, nuevoPrincipal);
+      setModelos(data);
+    } catch (err) {
+      setError(mensajeDeError(err, "No se pudo guardar el cambio."));
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const alternar = (m) => {
+    if (!m.activo) return guardar([...activos, m.id], principal);
+    const resto = activos.filter((id) => id !== m.id);
+    if (resto.length === 0) return setError("Tiene que quedar al menos un modelo encendido.");
+    // Si se apaga el principal, pasa a ser principal el siguiente de la lista
+    guardar(resto, m.id === principal ? resto[0] : principal);
+  };
+
+  const elegirPrincipal = (m) => guardar(m.activo ? activos : [...activos, m.id], m.id);
+
+  return (
+    <div className="tokens-dia modelos-ia">
+      <div className="tokens-dia__texto">
+        <strong>Modelos de IA · tokens gastados hoy: {stats.tokens_hoy.toLocaleString("es-BO")}</strong>
+        <span>
+          Encendé o apagá cada modelo y elegí el principal (★): responde primero y, si se agota su cupo o está saturado,
+          la pregunta pasa sola al siguiente modelo encendido. Cada modelo tiene su propio cupo gratuito.
+        </span>
+      </div>
+
+      {error && <p className="modelos-ia__error">{error}</p>}
+
+      {modelos.map((m) => {
+        const tokens = stats.tokens_por_modelo[m.id] || 0;
+        // El límite diario de tokens publicado es el de Groq; Google mide su cupo en consultas por día
+        const conLimite = m.proveedor === "groq";
+        const uso = conLimite ? tokens / stats.limite_tokens_dia : 0;
+        const estado = estadoModelo(m);
+        return (
+          <div key={m.id} className={`modelos-ia__fila ${m.activo ? "" : "modelos-ia__fila--apagado"}`}>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={m.activo}
+              aria-label={`${m.activo ? "Apagar" : "Encender"} ${m.id}`}
+              className={`switch ${m.activo ? "switch--on" : ""}`}
+              disabled={guardando || (!m.con_clave && !m.activo)}
+              onClick={() => alternar(m)}
+            >
+              <span className="switch__perilla" />
+            </button>
+
+            <div className="modelos-ia__nombre">
+              <span className="tokens-dia__modelo" title={m.id}>{m.id.split("/").pop()}</span>
+              <span className={`modelos-ia__proveedor modelos-ia__proveedor--${m.proveedor}`}>
+                {NOMBRE_PROVEEDOR[m.proveedor] || m.proveedor}
+              </span>
+            </div>
+
+            <div className="tokens-dia__barra">
+              {conLimite && (
                 <div
                   className={`tokens-dia__relleno ${uso > 0.8 ? "tokens-dia__relleno--alto" : ""}`}
                   style={{ width: `${Math.min(100, uso * 100)}%` }}
                 />
-              </div>
-              <span className="tokens-dia__num">
-                {tokens.toLocaleString("es-BO")} / {stats.limite_tokens_dia.toLocaleString("es-BO")}
-              </span>
+              )}
             </div>
-          );
-        })}
-      </div>
+            <span className="tokens-dia__num">
+              {tokens.toLocaleString("es-BO")}
+              {conLimite ? ` / ${stats.limite_tokens_dia.toLocaleString("es-BO")}` : " tokens"}
+            </span>
 
-      <PreguntasAprendidas onCambio={cargarStats} />
-    </>
+            <span className={`modelos-ia__estado modelos-ia__estado--${estado.clase}`}>{estado.texto}</span>
+
+            <button
+              type="button"
+              className={`modelos-ia__principal ${m.principal ? "modelos-ia__principal--si" : ""}`}
+              disabled={guardando || m.principal || !m.con_clave}
+              onClick={() => elegirPrincipal(m)}
+              aria-label={m.principal ? `${m.id} es el modelo principal` : `Usar ${m.id} como modelo principal`}
+              title={m.principal ? "Este modelo responde primero" : "Hacer que este modelo responda primero"}
+            >
+              <span className="material-symbols-outlined">star</span>
+              {m.principal ? "Principal" : "Usar primero"}
+            </button>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

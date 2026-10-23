@@ -28,13 +28,15 @@ from schemas import (
     DocumentResponse,
     DocumentosPaginados,
     StatsResponse,
+    ModelosIAUpdate,
     UserAdminResponse,
     RoleUpdateRequest,
     UsuariosPaginados,
 )
 from services.auth_service import get_current_admin
 from services.file_ingest_service import extract_text, chunk_text, filas_con_metadata, EXTENSIONES_IMAGEN
-from services.groq_service import MODELOS
+from services.groq_service import MODELOS, info_modelos
+from services.ajustes_service import guardar_modelos
 from services.vector_service import index_chunks, delete_document_chunks, obtener_chunks_de_documento
 from services.cache_service import (
     vaciar_cache,
@@ -272,6 +274,28 @@ def obtener_estadisticas(
         consultas_hoy=consultas_hoy,
         consultas_por_categoria=consultas_por_categoria,
     )
+
+
+@router.get("/modelos-ia")
+def ver_modelos_ia(admin: User = Depends(get_current_admin)):
+    """Modelos de IA del catálogo: activo, principal, en pausa por límite y si tienen clave."""
+    return info_modelos()
+
+
+@router.put("/modelos-ia")
+def configurar_modelos_ia(
+    datos: ModelosIAUpdate, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)
+):
+    """Enciende/apaga modelos y elige el principal (el que responde primero)."""
+    desconocidos = [m for m in datos.activos if m not in MODELOS]
+    if desconocidos:
+        raise HTTPException(status_code=400, detail=f"Modelo desconocido: {desconocidos[0]}")
+    if not datos.activos:
+        raise HTTPException(status_code=400, detail="Tiene que quedar al menos un modelo activo")
+    if datos.principal not in datos.activos:
+        raise HTTPException(status_code=400, detail="El modelo principal tiene que estar activo")
+    guardar_modelos(db, [m for m in MODELOS if m not in datos.activos], datos.principal)
+    return info_modelos()
 
 
 @router.get("/cache")

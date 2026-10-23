@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
 from routes import auth_routes, admin_routes, chat_routes, documentos_routes
 from services.username_service import username_desde_email
-from models import chat_log  # noqa: F401 — registra la tabla chat_logs en Base.metadata
+from models import chat_log, ajuste  # noqa: F401 — registra las tablas chat_logs y ajustes en Base.metadata
 
 # Crea las tablas (users, documents) si el archivo app.db no existe todavía.
 Base.metadata.create_all(bind=engine)
@@ -110,6 +110,16 @@ app.include_router(auth_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(documentos_routes.router)
+
+
+@app.on_event("startup")
+def _cargar_modelos_ia():
+    """Recupera qué modelos de IA dejó activos el admin (panel Estadísticas)."""
+    from database import SessionLocal
+    from services.ajustes_service import aplicar_modelos_guardados
+
+    with SessionLocal() as db:
+        aplicar_modelos_guardados(db)
 
 
 @app.on_event("startup")

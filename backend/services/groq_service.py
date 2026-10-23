@@ -15,29 +15,74 @@ tokenización): así una pregunta que dispara una búsqueda muy amplia no le
 manda al modelo un contexto gigante e innecesariamente caro en tokens.
 """
 
+import logging
 import os
 import re
 import time
-from groq import Groq, APIStatusError
+
+import httpx
+from groq import Groq, APIConnectionError, APIStatusError
 from dotenv import load_dotenv
 
 load_dotenv()
 
 _client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+_GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+_GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+_log = logging.getLogger(__name__)
 
-# Modelos gratuitos de Groq que sirven para responder, en orden de preferencia. Cada uno
-# tiene su PROPIO cupo (8.000 tokens/min, 200.000 tokens/día, 1.000 consultas/día en
-# el plan gratuito), así que al agotarse uno el pedido sigue con el siguiente y los
-# cupos se suman. Se puede cambiar el orden o quitar modelos con MODELOS_IA en .env
-# (ids separados por coma).
+# Modelos gratuitos que sirven para responder, en orden de preferencia. Cada uno tiene
+# su PROPIO cupo (en Groq: 8.000 tokens/min y 1.000 consultas/día en el plan gratuito),
+# así que al agotarse uno el pedido sigue con el siguiente y los cupos se suman.
+# Primero los de Groq (~1 s por respuesta); después los de Google Gemini, solo si hay
+# GEMINI_API_KEY en .env: tardan ~3 s y a veces contestan "alta demanda" (503), en cuyo
+# caso se saltean un rato. Se puede cambiar el orden o quitar modelos con MODELOS_IA en
+# .env (ids separados por coma).
 MODELOS_CONOCIDOS = {
-    "openai/gpt-oss-120b": {"max_tokens": 1200, "extra_body": {"reasoning_effort": "low"}},
-    "qwen/qwen3.8-27b": {"max_tokens": 800, "extra_body": None},  # tope de 1000 tokens de SALIDA por minuto
-    "openai/gpt-oss-20b": {"max_tokens": 1200, "extra_body": {"reasoning_effort": "low"}},
+    "openai/gpt-oss-120b": {"proveedor": "groq", "max_tokens": 1200, "extra_body": {"reasoning_effort": "low"}},
+    "qwen/qwen3.8-27b": {"proveedor": "groq", "max_tokens": 800, "extra_body": None},  # tope de 1000 tokens de SALIDA por minuto
+    "openai/gpt-oss-20b": {"proveedor": "groq", "max_tokens": 1200, "extra_body": {"reasoning_effort": "low"}},
+    # Sin "razonamiento" responden en ~3 s en vez de 6-9 s, con la misma calidad en las pruebas
+    "gemini-3.5-flash": {"proveedor": "gemini", "max_tokens": 1200, "extra_body": {"reasoning_effort": "none"}},
+    # Gemma no acepta reasoning_effort; el de 26B responde en 3-5 s (el de 31B tarda 30-80 s)
+    "gemma-4-26b-a4b-it": {"proveedor": "gemini", "max_tokens": 1200, "extra_body": None},
+    "gemini-3.1-flash-lite": {"proveedor": "gemini", "max_tokens": 1200, "extra_body": {"reasoning_effort": "none"}},
 }
-_AJUSTES_POR_DEFECTO = {"max_tokens": 800, "extra_body": None}
-MODELOS = [m.strip() for m in os.getenv("MODELOS_IA", ",".join(MODELOS_CONOCIDOS)).split(",") if m.strip()]
-MODELO = MODELOS[0]  # el preferido
+_POR_DEFECTO = [m for m, a in MODELOS_CONOCIDOS.items() if a["proveedor"] == "groq" or _GEMINI_KEY]
+# Catálogo completo, en el orden por defecto. Cuáles se usan lo decide el admin (configurar_modelos).
+MODELOS = [m.strip() for m in os.getenv("MODELOS_IA", ",".join(_POR_DEFECTO)).split(",") if m.strip()]
+
+# Elegido por el admin en Estadísticas; se guarda en la tabla `ajustes` (ver ajustes_service)
+_desactivados: set[str] = set()
+_principal: str | None = None
+
+
+def _ajustes(modelo: str) -> dict:
+    if modelo in MODELOS_CONOCIDOS:
+        return MODELOS_CONOCIDOS[modelo]
+    proveedor = "gemini" if modelo.startswith(("gemini", "gemma")) else "groq"
+    return {"proveedor": proveedor, "max_tokens": 800, "extra_body": None}
+
+
+def proveedor_de(modelo: str) -> str:
+    return _ajustes(modelo)["proveedor"]
+
+
+def configurar_modelos(desactivados: list[str], principal: str | None) -> None:
+    """Modelos que el admin apagó y el que eligió como principal (va primero en la cadena)."""
+    global _principal
+    _desactivados.clear()
+    _desactivados.update(m for m in desactivados if m in MODELOS)
+    _principal = principal if principal in MODELOS else None
+
+
+def modelos_en_uso() -> list[str]:
+    """La cadena efectiva: el principal primero y después los demás activos en el orden del catálogo."""
+    activos = [m for m in MODELOS if m not in _desactivados]
+    if _principal in activos:
+        activos.remove(_principal)
+        activos.insert(0, _principal)
+    return activos
 
 # Presupuesto de tokens para el CONTEXTO (no cuenta el system prompt ni la
 # pregunta). Se estima sin librería de tokenización: en la práctica el texto de
@@ -229,26 +274,103 @@ class LimiteIAError(Exception):
         self.diario = diario
 
 
+class _NoDisponible(Exception):
+    """El modelo no respondió (saturado, caído, sin conexión o mal configurado): se saltea `segundos`."""
+
+    def __init__(self, segundos: float):
+        super().__init__(f"modelo no disponible por {segundos} s")
+        self.segundos = segundos
+
+
 # modelo -> (instante hasta el que no se usa, si el bloqueo fue por límite DIARIO)
 _bloqueados: dict[str, tuple[float, bool]] = {}
 _BLOQUEO_DIARIO_SEGUNDOS = 30 * 60  # se vuelve a probar cada 30 min: el cupo diario se libera de a poco
 _BLOQUEO_MAXIMO_POR_MINUTO = 120
+_BLOQUEO_NO_DISPONIBLE_SEGUNDOS = 30  # "alta demanda" o caída momentánea: suele pasar enseguida
+_BLOQUEO_MAL_CONFIGURADO_SEGUNDOS = 60 * 60  # clave inválida o modelo retirado: no insistir en cada pedido
 
 
 def _libre(modelo: str) -> bool:
     return _bloqueados.get(modelo, (0.0, False))[0] <= time.time()
 
 
+def _llamar(modelo: str, mensajes: list[dict]) -> tuple[str, int]:
+    """
+    Una consulta a un modelo; devuelve (texto, tokens usados). Lanza APIStatusError
+    para 413/429 (contexto muy grande / límite de uso) y _NoDisponible si el modelo
+    no puede responder ahora.
+    """
+    ajustes = _ajustes(modelo)
+    if ajustes["proveedor"] == "gemini":
+        return _llamar_gemini(modelo, mensajes, ajustes)
+    try:
+        respuesta = _client.chat.completions.create(
+            model=modelo,
+            messages=mensajes,
+            temperature=0.1,
+            max_tokens=ajustes["max_tokens"],
+            **({"extra_body": ajustes["extra_body"]} if ajustes["extra_body"] else {}),
+        )
+    except APIStatusError as e:
+        if e.status_code >= 500:
+            raise _NoDisponible(_BLOQUEO_NO_DISPONIBLE_SEGUNDOS) from e
+        raise
+    except APIConnectionError as e:  # incluye timeouts
+        raise _NoDisponible(_BLOQUEO_NO_DISPONIBLE_SEGUNDOS) from e
+    tokens = getattr(respuesta.usage, "total_tokens", 0) or 0
+    return respuesta.choices[0].message.content or "", tokens
+
+
+def _llamar_gemini(modelo: str, mensajes: list[dict], ajustes: dict) -> tuple[str, int]:
+    """Gemini por su API compatible con OpenAI (mismo formato de mensajes que Groq)."""
+    if not _GEMINI_KEY:
+        raise _NoDisponible(_BLOQUEO_MAL_CONFIGURADO_SEGUNDOS)
+    try:
+        r = httpx.post(
+            _GEMINI_URL,
+            headers={"Authorization": f"Bearer {_GEMINI_KEY}"},
+            json={
+                "model": modelo,
+                "messages": mensajes,
+                "temperature": 0.1,
+                "max_tokens": ajustes["max_tokens"],
+                **(ajustes["extra_body"] or {}),
+            },
+            timeout=45,
+        )
+    except httpx.HTTPError as e:
+        raise _NoDisponible(_BLOQUEO_NO_DISPONIBLE_SEGUNDOS) from e
+    if r.status_code in (413, 429):
+        # Mismo tratamiento que los errores de Groq: achicar el contexto o bloquear por límite
+        raise APIStatusError(f"Gemini {r.status_code}: {r.text[:500]}", response=r, body=None)
+    if r.status_code >= 500:
+        raise _NoDisponible(_BLOQUEO_NO_DISPONIBLE_SEGUNDOS)
+    if r.status_code != 200:
+        _log.warning("Gemini %s no disponible (%s): %s", modelo, r.status_code, r.text[:300])
+        raise _NoDisponible(_BLOQUEO_MAL_CONFIGURADO_SEGUNDOS)
+    datos = r.json()
+    texto = datos["choices"][0]["message"].get("content") or ""
+    if "<thought>" in texto:
+        # Gemma a veces "piensa en voz alta" antes de responder: se queda solo la respuesta final
+        if "</thought>" not in texto:
+            raise _NoDisponible(_BLOQUEO_NO_DISPONIBLE_SEGUNDOS)
+        texto = texto.rsplit("</thought>", 1)[1]
+    return texto, (datos.get("usage") or {}).get("total_tokens", 0) or 0
+
+
 def _bloquear(modelo: str, error: APIStatusError) -> None:
     """Un modelo devolvió 429: se deja de usar un rato y los pedidos siguen por los demás."""
-    diario = "per day" in str(error).lower()
+    texto = str(error).lower()
+    diario = "per day" in texto or "perday" in texto  # Groq: "per day"; Gemini: "...PerDay..."
     if diario:
         segundos = _BLOQUEO_DIARIO_SEGUNDOS
     else:
         try:
             segundos = min(float(error.response.headers.get("retry-after")) + 0.5, _BLOQUEO_MAXIMO_POR_MINUTO)
         except (TypeError, ValueError, AttributeError):
-            segundos = 60.0
+            # Gemini no manda el encabezado: lo dice en el texto ("retry in 37.4s")
+            espera = re.search(r"retry in ([\d.]+)\s*s", texto)
+            segundos = min(float(espera.group(1)) + 0.5, _BLOQUEO_MAXIMO_POR_MINUTO) if espera else 60.0
     _bloqueados[modelo] = (time.time() + segundos, diario)
 
 
@@ -259,6 +381,26 @@ def estado_modelos() -> dict[str, str]:
         m: "libre" if _libre(m) else f"bloqueado ({int(_bloqueados[m][0] - ahora)} s)"
         for m in MODELOS
     }
+
+
+def info_modelos() -> list[dict]:
+    """Para el panel del admin: cada modelo del catálogo, si está activo, si es el principal y si está en pausa."""
+    en_uso = modelos_en_uso()
+    ahora = time.time()
+    filas = []
+    for m in MODELOS:
+        hasta, diario = _bloqueados.get(m, (0.0, False))
+        proveedor = proveedor_de(m)
+        filas.append({
+            "id": m,
+            "proveedor": proveedor,
+            "con_clave": bool(_GEMINI_KEY if proveedor == "gemini" else os.getenv("GROQ_API_KEY")),
+            "activo": m not in _desactivados,
+            "principal": bool(en_uso) and en_uso[0] == m,
+            "pausa_segundos": max(0, int(hasta - ahora)),
+            "pausa_diaria": diario and hasta > ahora,
+        })
+    return filas
 
 
 def generar_respuesta(
@@ -303,28 +445,27 @@ def generar_respuesta(
             {"role": "user", "content": f"Contexto disponible:\n{contexto}\n\n{cola}"},
         ]
 
-        candidatos = [m for m in MODELOS if _libre(m)]
+        en_uso = modelos_en_uso()
+        if not en_uso:
+            raise LimiteIAError(diario=False)  # el admin apagó todos los modelos
+        candidatos = [m for m in en_uso if _libre(m)]
         if not candidatos:
             # Todos agotados: si el que se libera antes lo hace en pocos segundos se espera
             # (el estudiante ve una respuesta lenta, no un error); si no, se avisa.
-            libera_en = min(_bloqueados[m][0] for m in MODELOS) - time.time()
+            libera_en = min(_bloqueados[m][0] for m in en_uso) - time.time()
             if libera_en <= ESPERA_MAXIMA_SEGUNDOS and esperas < 2:
                 esperas += 1
                 time.sleep(max(libera_en, 0) + 0.5)
                 continue
-            raise LimiteIAError(diario=all(_bloqueados[m][1] for m in MODELOS))
+            raise LimiteIAError(diario=all(_bloqueados[m][1] for m in en_uso))
 
         demasiado_grande = False
         for modelo in candidatos:
-            ajustes = MODELOS_CONOCIDOS.get(modelo, _AJUSTES_POR_DEFECTO)
             try:
-                respuesta = _client.chat.completions.create(
-                    model=modelo,
-                    messages=mensajes,
-                    temperature=0.1,
-                    max_tokens=ajustes["max_tokens"],
-                    **({"extra_body": ajustes["extra_body"]} if ajustes["extra_body"] else {}),
-                )
+                texto, tokens = _llamar(modelo, mensajes)
+            except _NoDisponible as e:
+                _bloqueados[modelo] = (time.time() + e.segundos, e.segundos >= _BLOQUEO_DIARIO_SEGUNDOS)
+                continue
             except APIStatusError as e:
                 if e.status_code == 413:
                     demasiado_grande = True  # el contexto no entra: se achica y se reintenta
@@ -333,8 +474,7 @@ def generar_respuesta(
                     _bloquear(modelo, e)
                     continue
                 raise
-            tokens = getattr(respuesta.usage, "total_tokens", 0) or 0
-            return limpiar_formato(respuesta.choices[0].message.content or ""), tokens, modelo
+            return limpiar_formato(texto), tokens, modelo
 
         if demasiado_grande:
             if reducciones == 2:

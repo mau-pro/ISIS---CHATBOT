@@ -129,6 +129,12 @@ class StatsResponse(BaseModel):
     limite_tokens_dia: int = 200000  # plan gratuito de Groq para openai/gpt-oss-120b
 
 
+class ModelosIAUpdate(BaseModel):
+    """Qué modelos de IA quedan encendidos y cuál responde primero (panel Estadísticas)."""
+    activos: list[str]
+    principal: str
+
+
 # ---------- Gestión de usuarios y roles (admin) ----------
 
 class UserAdminResponse(BaseModel):

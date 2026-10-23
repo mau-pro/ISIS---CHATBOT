@@ -1,0 +1,89 @@
+{
+ "modelo_local": "qwen2.5:1.5b",
+ "resultados": [
+  {
+   "tipo": "imagen (OCR)",
+   "pregunta": "cuando es el torneo de billar",
+   "groq": {
+    "segundos_total": 1.6,
+    "tokens": 1707,
+    "modelo": "openai/gpt-oss-120b",
+    "respuesta": "El torneo de Billar está programado para el 11 de septiembre a las 15:30 en RockStar Coffee Billar, Zona Nueva Terminal."
+   },
+   "local": {
+    "segundos_total": 42.5,
+    "segundos_leyendo_contexto": 32.8,
+    "tokens_contexto": 1746,
+    "segundos_escribiendo": 7.5,
+    "tokens_respuesta": 104,
+    "tokens_por_segundo_escritura": 13.8,
+    "segundos_cargando_modelo": 0.0,
+    "respuesta": "El torneo de billar se celebra el 11 de septiembre a las 15:30 en el RockStar Coffee Billar, Zona Nueva Terminal, frente a la Piscina Olímpica. La inscripción es de 30 Bs para la categoría individual y 50 Bs para la de doble. Los premios incluyen 1er lugar en efectivo, 2do lugar en efectivo y 3er lugar sorpresa.",
+    "ram_ollama_mb": 195
+   }
+  },
+  {
+   "tipo": "texto / docente",
+   "pregunta": "que materias dicta el docente wilfredo terrazas",
+   "groq": {
+    "segundos_total": 1.0,
+    "tokens": 2260,
+    "modelo": "openai/gpt-oss-120b",
+    "respuesta": "- TECNICAS DE PROGRAMACION I (SIS110) \n- BASE DE DATOS (SIS415) \n- TALLER DE BASE DE DATOS (SIS518) \n- PRACTICA LABORAL (SIS848)"
+   },
+   "local": {
+    "segundos_total": 55.2,
+    "segundos_leyendo_contexto": 21.2,
+    "tokens_contexto": 2345,
+    "segundos_escribiendo": 31.8,
+    "tokens_respuesta": 384,
+    "tokens_por_segundo_escritura": 12.1,
+    "segundos_cargando_modelo": 0.0,
+    "respuesta": "El docente Wilfredo Terrazas Fidel dicta las siguientes materias:\n\n- TECNICAS DE PROGRAMACION I (SIS110) - Martes, 07:45 - 10:00, P1 LAB. 6\n- TECNICAS DE PROGRAMACION I (SIS110) - Miércoles, 07:45 - 10:00, P0 AMB. 2\n- TECNICAS DE PROGRAMACION I (SIS110) - Jueves, 14:00 - 15:30, P0 AMB. 2\n- BASE DE DATOS (SIS415) - Jueves, 08:30 - 10:00, P3 AMB. 6\n- BASE DE DATOS (SIS415) - Miércoles, 14:45 - 16:15, P1 LAB. 6\n- BASE DE DATOS (SIS415) - Viernes, 14:45 - 16:15, P1 LAB. 6\n- TALLER DE BASE DE DATOS (SIS518) - Jueves, 07:45 - 10:00, P1 LAB. 2\n- TALLER DE BASE DE DATOS (SIS518) - Miércoles, 16:15 - 17:45, P1 LAB. 3\n- PRACTICA LABORAL (SIS848) - Miércoles, 10:00 - 12:15, P3 AMB. 6",
+    "ram_ollama_mb": 195
+   }
+  },
+  {
+   "tipo": "documento PDF",
+   "pregunta": "que requisitos piden para la beca de alimentacion",
+   "groq": {
+    "segundos_total": 0.9,
+    "tokens": 2374,
+    "modelo": "openai/gpt-oss-120b",
+    "respuesta": "Sobre la beca de alimentación, los requisitos son:\n\n- Ser boliviano de nacimiento o tener nacionalidad boliviana \n- Ser alumno regular de la Universidad Autónoma \"Tomás Frías\" \n- Haber vencido el primer semestre en sistema semestralizado o primer nivel en sistema anualizado \n- No contar con ningún otro beneficio dentro de la universidad (exceptuando el Beneficio Internado Universitario)"
+   },
+   "local": {
+    "segundos_total": 40.7,
+    "segundos_leyendo_contexto": 25.6,
+    "tokens_contexto": 2532,
+    "segundos_escribiendo": 12.9,
+    "tokens_respuesta": 160,
+    "tokens_por_segundo_escritura": 12.4,
+    "segundos_cargando_modelo": 0.0,
+    "respuesta": "Para la beca de alimentación, la Universidad Autónoma \"Tomás Frías\" requiere que los estudiantes cumplan los siguientes requisitos:\n\n- Ser Boliviano de nacimiento o tener Nacionalidad Boliviana.\n- Ser alumno regular de la Universidad Autónoma \"Tomás Frías\".\n- Haber vencido el primer semestre en Sistema Semestralizado o primer nivel en Sistema Anualizado.\n- Ser estudiante que no cuente con ningún otro beneficio dentro la Universidad Autónoma \"Tomás Frías\" (Exceptuando el Beneficio Internado Universitario).\n\nEstos requisitos son necesarios para que puedas postular a la beca \"Alimentación\" y ser seleccionado para recibir la ayuda financiera.",
+    "ram_ollama_mb": 195
+   }
+  },
+  {
+   "tipo": "imagen (OCR)",
+   "pregunta": "hasta cuando puedo postular a la beca google",
+   "groq": {
+    "segundos_total": 1.0,
+    "tokens": 1955,
+    "modelo": "openai/gpt-oss-120b",
+    "respuesta": "Hasta el viernes 18 de septiembre a las 12:00 mediodía."
+   },
+   "local": {
+    "segundos_total": 20.3,
+    "segundos_leyendo_contexto": 15.2,
+    "tokens_contexto": 2082,
+    "segundos_escribiendo": 2.9,
+    "tokens_respuesta": 41,
+    "tokens_por_segundo_escritura": 14.1,
+    "segundos_cargando_modelo": 0.0,
+    "respuesta": "Para postular a la beca Google, debes completar el formulario de postulación en línea antes de las 12:00 del viernes 18 de septiembre.",
+    "ram_ollama_mb": 195
+   }
+  }
+ ]
+}
